@@ -3,25 +3,31 @@
 * This file is part of BLASFEO.                                                                   *
 *                                                                                                 *
 * BLASFEO -- BLAS For Embedded Optimization.                                                      *
-* Copyright (C) 2016-2018 by Gianluca Frison.                                                     *
+* Copyright (C) 2019 by Gianluca Frison.                                                          *
 * Developed at IMTEK (University of Freiburg) under the supervision of Moritz Diehl.              *
 * All rights reserved.                                                                            *
 *                                                                                                 *
-* This program is free software: you can redistribute it and/or modify                            *
-* it under the terms of the GNU General Public License as published by                            *
-* the Free Software Foundation, either version 3 of the License, or                               *
-* (at your option) any later version                                                              *.
+* The 2-Clause BSD License                                                                        *
 *                                                                                                 *
-* This program is distributed in the hope that it will be useful,                                 *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of                                  *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                   *
-* GNU General Public License for more details.                                                    *
+* Redistribution and use in source and binary forms, with or without                              *
+* modification, are permitted provided that the following conditions are met:                     *
 *                                                                                                 *
-* You should have received a copy of the GNU General Public License                               *
-* along with this program.  If not, see <https://www.gnu.org/licenses/>.                          *
+* 1. Redistributions of source code must retain the above copyright notice, this                  *
+*    list of conditions and the following disclaimer.                                             *
+* 2. Redistributions in binary form must reproduce the above copyright notice,                    *
+*    this list of conditions and the following disclaimer in the documentation                    *
+*    and/or other materials provided with the distribution.                                       *
 *                                                                                                 *
-* The authors designate this particular file as subject to the "Classpath" exception              *
-* as provided by the authors in the LICENSE file that accompained this code.                      *
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND                 *
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                   *
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                          *
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR                 *
+* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES                  *
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                    *
+* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND                     *
+* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT                      *
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS                   *
+* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                    *
 *                                                                                                 *
 * Author: Gianluca Frison, gianluca.frison (at) imtek.uni-freiburg.de                             *
 *                                                                                                 *
@@ -40,6 +46,10 @@
 #ifdef EXTERNAL_BLAS_OPENBLAS
 #include <d_blas.h>
 #endif
+
+
+
+//#define PRINT_DATA
 
 
 
@@ -498,8 +508,8 @@ int main()
 
 	// problem size
 	int N = 10;
-	int nx_ = 8;
-	int nu_ = 3;
+	int nx_ = 64;
+	int nu_ = 32;
 
 	// stage-wise variant size
 	int *nx = malloc((N+1)*sizeof(int));
@@ -535,6 +545,7 @@ int main()
 	x0[0] = 2.5;
 	x0[1] = 2.5;
 
+#ifdef PRINT_DATA
 	printf("A:\n");
 	d_print_exp_mat(nx_, nx_, A, nx_);
 	printf("B:\n");
@@ -543,6 +554,7 @@ int main()
 	d_print_exp_mat(1, nx_, b, 1);
 	printf("x0:\n");
 	d_print_exp_mat(1, nx_, x0, 1);
+#endif
 
 /************************************************
 * cost function
@@ -562,6 +574,7 @@ int main()
 	double *q; d_zeros(&q, nx_, 1);
 	for(ii=0; ii<nx_; ii++) q[ii] = 0.1;
 
+#ifdef PRINT_DATA
 	printf("R:\n");
 	d_print_exp_mat(nu_, nu_, R, nu_);
 	printf("S:\n");
@@ -572,6 +585,7 @@ int main()
 	d_print_exp_mat(1, nu_, r, 1);
 	printf("q:\n");
 	d_print_exp_mat(1, nx_, q, 1);
+#endif
 
 /************************************************
 * BLASFEO API
@@ -593,23 +607,29 @@ int main()
 	struct blasfeo_dvec sb0;
 	blasfeo_allocate_dvec(nx_, &sb0);
 	blasfeo_dgemv_n(nx_, nx_, 1.0, &sA, 0, 0, &sx0, 0, 1.0, &sb, 0, &sb0, 0);
+#ifdef PRINT_DATA
 	printf("b0:\n");
 	blasfeo_print_tran_dvec(nx_, &sb0, 0);
+#endif
 
 	struct blasfeo_dmat sBbt0;
 	blasfeo_allocate_dmat(nu_+nx_+1, nx_, &sBbt0);
 	blasfeo_pack_tran_dmat(nx_, nu_, B, nx_, &sBbt0, 0, 0);
 	blasfeo_drowin(nx_, 1.0, &sb0, 0, &sBbt0, nu_, 0);
+#ifdef PRINT_DATA
 	printf("Bbt0:\n");
 	blasfeo_print_exp_dmat(nu_+1, nx_, &sBbt0, 0, 0);
+#endif
 
 	struct blasfeo_dmat sBAbt1;
 	blasfeo_allocate_dmat(nu_+nx_+1, nx_, &sBAbt1);
 	blasfeo_pack_tran_dmat(nx_, nu_, B, nx_, &sBAbt1, 0, 0);
 	blasfeo_pack_tran_dmat(nx_, nx_, A, nx_, &sBAbt1, nu_, 0);
 	blasfeo_pack_tran_dmat(nx_, 1, b, nx_, &sBAbt1, nu_+nx_, 0);
+#ifdef PRINT_DATA
 	printf("BAbt1:\n");
 	blasfeo_print_exp_dmat(nu_+nx_+1, nx_, &sBAbt1, 0, 0);
+#endif
 
 	struct blasfeo_dvec sr0; // XXX no need to update r0 since S=0
 	blasfeo_allocate_dvec(nu_, &sr0);
@@ -619,8 +639,10 @@ int main()
 	blasfeo_allocate_dmat(nu_+1, nu_, &sRr0);
 	blasfeo_pack_dmat(nu_, nu_, R, nu_, &sRr0, 0, 0);
 	blasfeo_drowin(nu_, 1.0, &sr0, 0, &sRr0, nu_, 0);
+#ifdef PRINT_DATA
 	printf("sRr0:\n");
 	blasfeo_print_exp_dmat(nu_+1, nu_, &sRr0, 0, 0);
+#endif
 
 	struct blasfeo_dvec srq1;
 	blasfeo_allocate_dvec(nu_+nx_, &srq1);
@@ -633,8 +655,10 @@ int main()
 	blasfeo_pack_tran_dmat(nu_, nx_, S, nu_, &sRSQrq1, nu_, 0);
 	blasfeo_pack_dmat(nx_, nx_, Q, nx_, &sRSQrq1, nu_, nu_);
 	blasfeo_drowin(nu_+nx_, 1.0, &srq1, 0, &sRSQrq1, nu_+nx_, 0);
+#ifdef PRINT_DATA
 	printf("RSQrq1:\n");
 	blasfeo_print_exp_dmat(nu_+nx_+1, nu_+nx_, &sRSQrq1, 0, 0);
+#endif
 
 	struct blasfeo_dvec sqN;
 	blasfeo_allocate_dvec(nx_, &sqN);
@@ -644,8 +668,10 @@ int main()
 	blasfeo_allocate_dmat(nx_+1, nx_, &sQqN);
 	blasfeo_pack_dmat(nx_, nx_, Q, nx_, &sQqN, 0, 0);
 	blasfeo_drowin(nx_, 1.0, &sqN, 0, &sQqN, nx_, 0);
+#ifdef PRINT_DATA
 	printf("QqN:\n");
 	blasfeo_print_exp_dmat(nx_+1, nx_, &sQqN, 0, 0);
+#endif
 
 /************************************************
 * array of matrices
@@ -698,59 +724,81 @@ int main()
 	
 #if ( EXTERNAL_BLAS!=0 | defined(BLAS_API) )
 
+#ifdef PRINT_DATA
 	printf("\n*** BLAS_API ***\n\n");
+#endif
 
 //	int incx, incy;
 
 	double *Bbt0 = malloc((nu_+1)*nx_*sizeof(double));
 	blasfeo_unpack_dmat(nu_+1, nx_, &sBbt0, 0, 0, Bbt0, nu_+1);
+#ifdef PRINT_DATA
 	printf("Bbt0:\n");
 	d_print_exp_mat(nu_+1, nx_, Bbt0, nu_+1);
+#endif
 
 	double *b0 = malloc(nx_*sizeof(double));
 	blasfeo_unpack_dvec(nx_, &sb0, 0, b0);
+#ifdef PRINT_DATA
 	printf("b0:\n");
 	d_print_exp_mat(1, nx_, b0, 1);
+#endif
 
 	double *BAbt1 = malloc((nu_+nx_+1)*nx_*sizeof(double));
 	blasfeo_unpack_dmat(nu_+nx_+1, nx_, &sBAbt1, 0, 0, BAbt1, nu_+nx_+1);
+#ifdef PRINT_DATA
 	printf("BAbt1:\n");
 	d_print_exp_mat(nu_+nx_+1, nx_, BAbt1, nu_+nx_+1);
+#endif
 
 	double *b1 = malloc(nx_*sizeof(double));
 	blasfeo_unpack_dvec(nx_, &sb, 0, b1);
+#ifdef PRINT_DATA
 	printf("b1:\n");
 	d_print_exp_mat(1, nx_, b1, 1);
+#endif
 
 	double *Rr0 = malloc((nu_+1)*nu_*sizeof(double));
 	blasfeo_unpack_dmat(nu_+1, nu_, &sRr0, 0, 0, Rr0, nu_+1);
+#ifdef PRINT_DATA
 	printf("Rr0:\n");
 	d_print_exp_mat(nu_+1, nu_, Rr0, nu_+1);
+#endif
 
 	double *r0 = malloc(nu_*sizeof(double));
 	blasfeo_unpack_dvec(nu_, &sr0, 0, r0);
+#ifdef PRINT_DATA
 	printf("r0:\n");
 	d_print_exp_mat(1, nu_, r0, 1);
+#endif
 
 	double *RSQrq1 = malloc((nu_+nx_+1)*(nu_+nx_)*sizeof(double));
 	blasfeo_unpack_dmat(nu_+nx_+1, nu_+nx_, &sRSQrq1, 0, 0, RSQrq1, nu_+nx_+1);
+#ifdef PRINT_DATA
 	printf("RSQrq1:\n");
 	d_print_exp_mat(nu_+nx_+1, nu_+nx_, RSQrq1, nu_+nx_+1);
+#endif
 
 	double *rq1 = malloc((nu_+nx_)*sizeof(double));
 	blasfeo_unpack_dvec(nu_+nx_, &srq1, 0, rq1);
+#ifdef PRINT_DATA
 	printf("rq1:\n");
 	d_print_exp_mat(1, nu_+nx_, rq1, 1);
+#endif
 
 	double *QqN = malloc((nx_+1)*nx_*sizeof(double));
 	blasfeo_unpack_dmat(nx_+1, nx_, &sQqN, 0, 0, QqN, nx_+1);
+#ifdef PRINT_DATA
 	printf("RSQrq1:\n");
 	d_print_exp_mat(nx_+1, nx_, QqN, nx_+1);
+#endif
 
 	double *qN = malloc((nx_)*sizeof(double));
 	blasfeo_unpack_dvec(nx_, &sqN, 0, qN);
+#ifdef PRINT_DATA
 	printf("qN:\n");
 	d_print_exp_mat(1, nx_, qN, 1);
+#endif
 
 
 

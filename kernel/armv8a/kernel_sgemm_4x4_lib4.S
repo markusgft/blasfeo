@@ -3,25 +3,31 @@
 * This file is part of BLASFEO.                                                                   *
 *                                                                                                 *
 * BLASFEO -- BLAS For Embedded Optimization.                                                      *
-* Copyright (C) 2016-2018 by Gianluca Frison.                                                     *
+* Copyright (C) 2019 by Gianluca Frison.                                                          *
 * Developed at IMTEK (University of Freiburg) under the supervision of Moritz Diehl.              *
 * All rights reserved.                                                                            *
 *                                                                                                 *
-* This program is free software: you can redistribute it and/or modify                            *
-* it under the terms of the GNU General Public License as published by                            *
-* the Free Software Foundation, either version 3 of the License, or                               *
-* (at your option) any later version                                                              *.
+* The 2-Clause BSD License                                                                        *
 *                                                                                                 *
-* This program is distributed in the hope that it will be useful,                                 *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of                                  *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                   *
-* GNU General Public License for more details.                                                    *
+* Redistribution and use in source and binary forms, with or without                              *
+* modification, are permitted provided that the following conditions are met:                     *
 *                                                                                                 *
-* You should have received a copy of the GNU General Public License                               *
-* along with this program.  If not, see <https://www.gnu.org/licenses/>.                          *
+* 1. Redistributions of source code must retain the above copyright notice, this                  *
+*    list of conditions and the following disclaimer.                                             *
+* 2. Redistributions in binary form must reproduce the above copyright notice,                    *
+*    this list of conditions and the following disclaimer in the documentation                    *
+*    and/or other materials provided with the distribution.                                       *
 *                                                                                                 *
-* The authors designate this particular file as subject to the "Classpath" exception              *
-* as provided by the authors in the LICENSE file that accompained this code.                      *
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND                 *
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                   *
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                          *
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR                 *
+* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES                  *
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                    *
+* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND                     *
+* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT                      *
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS                   *
+* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                    *
 *                                                                                                 *
 * Author: Gianluca Frison, gianluca.frison (at) imtek.uni-freiburg.de                             *
 *                                                                                                 *
@@ -641,7 +647,7 @@ NAME:
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_AB_4X4_LIB4
 #else
 	.align	4
@@ -650,20 +656,25 @@ NAME:
 
 	ld1		{v28.2d}, [x8]
 
+	ld1		{v29.2d}, [x9]
+
 	fmul	v0.4s, v0.4s, v28.4s[0]
 	fmul	v1.4s, v1.4s, v28.4s[0]
 	fmul	v2.4s, v2.4s, v28.4s[0]
 	fmul	v3.4s, v3.4s, v28.4s[0]
 
-	ld1		{v28.2d}, [x9]
+	fcmpe	s29, #0
+	beq		0f
 
 	ld1		{v24.4s, v25.4s, v26.4s, v27.4s}, [x10], #64
-	fmla	v0.4s, v24.4s, v28.4s[0]
-	fmla	v1.4s, v25.4s, v28.4s[0]
-	fmla	v2.4s, v26.4s, v28.4s[0]
-	fmla	v3.4s, v27.4s, v28.4s[0]
+	fmla	v0.4s, v24.4s, v29.4s[0]
+	fmla	v1.4s, v25.4s, v29.4s[0]
+	fmla	v2.4s, v26.4s, v29.4s[0]
+	fmla	v3.4s, v27.4s, v29.4s[0]
 
-#if MACRO_LEVEL>=2
+0:
+
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -682,7 +693,7 @@ NAME:
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_11_4X4_LIB4
 #else
 	.align	4
@@ -695,7 +706,7 @@ NAME:
 	fadd	v2.4s, v26.4s, v2.4s
 	fadd	v3.4s, v27.4s, v3.4s
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -714,7 +725,7 @@ NAME:
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_M11_4X4_LIB4
 #else
 	.align	4
@@ -727,7 +738,7 @@ NAME:
 	fsub	v2.4s, v26.4s, v2.4s
 	fsub	v3.4s, v27.4s, v3.4s
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -746,7 +757,7 @@ NAME:
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_STORE_4X4_LIB4
 #else
 	.align 4
@@ -756,7 +767,7 @@ NAME:
 	stp		q0, q1, [x8, #0]
 	stp		q2, q3, [x8, #32]
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -853,7 +864,7 @@ NAME:
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_STORE_L_4X4_LIB4
 #else
 	.align 4
@@ -872,7 +883,7 @@ NAME:
 	stp		q0, q1, [x8, #0]
 	stp		q2, q3, [x8, #32]
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -1039,7 +1050,7 @@ NAME:
 	lsl		w11, w11, #4 // 16*sda
 	mov		w12, w3 // offsetB
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_GEMM_ADD_NN_4X4_LIB4
 #else
 	bl	inner_edge_gemm_add_nn_4x4_lib4
@@ -1113,7 +1124,7 @@ NAME:
 	lsl		w11, w11, #4 // 16*sda
 	mov		w12, w3 // offsetB
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_GEMM_ADD_NN_4X4_LIB4
 #else
 	bl	inner_edge_gemm_add_nn_4x4_lib4

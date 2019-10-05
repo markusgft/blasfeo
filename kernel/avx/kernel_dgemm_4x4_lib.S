@@ -3,25 +3,31 @@
 * This file is part of BLASFEO.                                                                   *
 *                                                                                                 *
 * BLASFEO -- BLAS For Embedded Optimization.                                                      *
-* Copyright (C) 2016-2018 by Gianluca Frison.                                                     *
+* Copyright (C) 2019 by Gianluca Frison.                                                          *
 * Developed at IMTEK (University of Freiburg) under the supervision of Moritz Diehl.              *
 * All rights reserved.                                                                            *
 *                                                                                                 *
-* This program is free software: you can redistribute it and/or modify                            *
-* it under the terms of the GNU General Public License as published by                            *
-* the Free Software Foundation, either version 3 of the License, or                               *
-* (at your option) any later version                                                              *.
+* The 2-Clause BSD License                                                                        *
 *                                                                                                 *
-* This program is distributed in the hope that it will be useful,                                 *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of                                  *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                   *
-* GNU General Public License for more details.                                                    *
+* Redistribution and use in source and binary forms, with or without                              *
+* modification, are permitted provided that the following conditions are met:                     *
 *                                                                                                 *
-* You should have received a copy of the GNU General Public License                               *
-* along with this program.  If not, see <https://www.gnu.org/licenses/>.                          *
+* 1. Redistributions of source code must retain the above copyright notice, this                  *
+*    list of conditions and the following disclaimer.                                             *
+* 2. Redistributions in binary form must reproduce the above copyright notice,                    *
+*    this list of conditions and the following disclaimer in the documentation                    *
+*    and/or other materials provided with the distribution.                                       *
 *                                                                                                 *
-* The authors designate this particular file as subject to the "Classpath" exception              *
-* as provided by the authors in the LICENSE file that accompained this code.                      *
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND                 *
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                   *
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                          *
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR                 *
+* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES                  *
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                    *
+* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND                     *
+* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT                      *
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS                   *
+* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                    *
 *                                                                                                 *
 * Author: Gianluca Frison, gianluca.frison (at) imtek.uni-freiburg.de                             *
 *                                                                                                 *
@@ -6252,7 +6258,6 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-
 	movq	ARG12, %r14  // n1
 	cmpl	$1, %r14d
 	jg		100f
@@ -6565,13 +6570,55 @@
 	movq	ARG4, %r13  // lda
 	sall	$3, %r13d
 
-	// TODO kernel ?x4 ???
+	movq	ARG11, %r14  // m1
+	cmpl	$1, %r14d
+	jg		100f
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NT_4X1_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nt_4x1_lib4c)
+#endif
+	
+	jmp		103f
+
+100:
+
+	movq	ARG11, %r14  // m1
+	cmpl	$2, %r14d
+	jg		101f
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NT_4X2_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nt_4x2_lib4c)
+#endif
+
+	jmp		103f
+
+101:
+
+	movq	ARG11, %r14  // m1
+	cmpl	$3, %r14d
+	jg		102f
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NT_4X3_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nt_4x3_lib4c)
+#endif
+
+	jmp		103f
+
+102:
 
 #if MACRO_LEVEL>=2
 	INNER_KERNEL_DGEMM_NT_4X4_LIB4C
 #else
 	CALL(inner_kernel_dgemm_nt_4x4_lib4c)
 #endif
+
+103:
 
 
 	// call inner blend
@@ -6791,6 +6838,186 @@
 	ret
 
 	FUN_END(kernel_dgemm_nn_4x4_vs_lib4ccc)
+
+
+
+
+
+//                                 1      2              3          4        5          6             7          8        9          10
+// void kernel_dgemm_tt_4x4_libc4cc(int k, double *alpha, double *A, int lda, double *B, double *beta, double *C, int ldc, double *D, int ldd);
+
+	.p2align 4,,15
+	GLOB_FUN_START(kernel_dgemm_tt_4x4_libc4cc)
+
+	PROLOGUE
+
+	// zero accumulation registers
+
+	ZERO_ACC
+
+
+	// call inner dgemm kernel nn
+
+	movq	ARG1, %r10 // k
+	movq	ARG5, %r11  // B
+	movq	ARG3, %r12  // A
+	movq	ARG4, %r13  // lda
+	sall	$3, %r13d
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NN_4X4_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nn_4x4_lib4c)
+#endif
+
+
+	// call inner blend
+
+	movq	ARG2, %r10 // alpha
+	movq	ARG6, %r11 // beta
+	movq	ARG7, %r12   // C
+	movq	ARG8, %r13   // ldc
+	sall	$3, %r13d
+
+#if MACRO_LEVEL>=1
+	INNER_TRAN_SCALE_AB_4X4_LIB
+#else
+	CALL(inner_tran_scale_ab_4x4_lib)
+#endif
+
+
+	// store n
+
+	movq	ARG9, %r10 // D
+	movq	ARG10, %r11 // ldd
+	sall	$3, %r11d
+
+#if MACRO_LEVEL>=1
+	INNER_STORE_4X4_LIB
+#else
+	CALL(inner_store_4x4_lib)
+#endif
+
+
+	EPILOGUE
+
+	ret
+
+	FUN_END(kernel_dgemm_tt_4x4_libc4cc)
+
+
+
+
+
+//                                     1      2              3          4        5          6             7          8        9          10       11      12
+// void kernel_dgemm_tt_4x4_vs_libc4cc(int k, double *alpha, double *A, int lda, double *B, double *beta, double *C, int ldc, double *D, int ldd, int m1, int n1);
+
+	.p2align 4,,15
+	GLOB_FUN_START(kernel_dgemm_tt_4x4_vs_libc4cc)
+
+	PROLOGUE
+
+	// zero accumulation registers
+
+	ZERO_ACC
+
+
+	// call inner dgemm kernel nn
+
+	movq	ARG1, %r10 // k
+	movq	ARG5, %r11  // B
+	movq	ARG3, %r12  // A
+	movq	ARG4, %r13  // lda
+	sall	$3, %r13d
+
+	movq	ARG11, %r14  // m1
+	cmpl	$1, %r14d
+	jg		100f
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NN_4X1_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nn_4x1_lib4c)
+#endif
+	
+	jmp		103f
+
+100:
+
+	movq	ARG11, %r14  // m1
+	cmpl	$2, %r14d
+	jg		101f
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NN_4X2_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nn_4x2_lib4c)
+#endif
+
+	jmp		103f
+
+101:
+
+	movq	ARG11, %r14  // m1
+	cmpl	$3, %r14d
+	jg		102f
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NN_4X3_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nn_4x3_lib4c)
+#endif
+
+	jmp		103f
+
+102:
+
+#if MACRO_LEVEL>=2
+	INNER_KERNEL_DGEMM_NN_4X4_LIB4C
+#else
+	CALL(inner_kernel_dgemm_nn_4x4_lib4c)
+#endif
+
+103:
+
+
+	// call inner blend
+
+	movq	ARG2, %r10 // alpha
+	movq	ARG6, %r11 // beta
+	movq	ARG7, %r12   // C
+	movq	ARG8, %r13   // ldc
+	sall	$3, %r13d
+	movq	ARG11, %r14 // m1
+	movq	ARG12, %r15 // n1
+
+#if MACRO_LEVEL>=1
+	INNER_TRAN_SCALE_AB_4X4_VS_LIB
+#else
+	CALL(inner_tran_scale_ab_4x4_vs_lib)
+#endif
+
+
+	// store n
+
+	movq	ARG9, %r10 // D
+	movq	ARG10, %r11 // ldd
+	sall	$3, %r11d
+	movq	ARG11, %r12 // m1
+	movq	ARG12, %r13 // n1
+
+#if MACRO_LEVEL>=1
+	INNER_STORE_4X4_VS_LIB
+#else
+	CALL(inner_store_4x4_vs_lib)
+#endif
+
+
+	EPILOGUE
+
+	ret
+
+	FUN_END(kernel_dgemm_tt_4x4_vs_libc4cc)
 
 
 
@@ -7081,7 +7308,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_4x4_lib4c)
@@ -7153,7 +7380,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_4x4_vs_lib4c)
@@ -7273,7 +7500,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_4x4_lib4c)
@@ -7343,7 +7570,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_4x4_vs_lib4c)
@@ -7459,7 +7686,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_one_4x4_lib4c)
@@ -7531,7 +7758,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_one_4x4_vs_lib4c)
@@ -7651,7 +7878,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_one_4x4_lib4c)
@@ -7721,7 +7948,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RL_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_rl_one_4x4_vs_lib4c)
@@ -7843,7 +8070,7 @@
 	CALL(inner_kernel_dgemm_nn_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_4x4_lib4c)
@@ -7961,7 +8188,7 @@
 
 	movq	ARG12, %r14 // n1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_4x4_vs_lib4c)
@@ -8037,7 +8264,7 @@
 	CALL(inner_kernel_dgemm_nn_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_4x4_lib4c)
@@ -8153,7 +8380,7 @@
 
 	movq	ARG10, %r14 // m1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_4x4_vs_lib4c)
@@ -8225,7 +8452,7 @@
 	CALL(inner_kernel_dgemm_nn_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_one_4x4_lib4c)
@@ -8343,7 +8570,7 @@
 
 	movq	ARG12, %r14 // n1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_one_4x4_vs_lib4c)
@@ -8419,7 +8646,7 @@
 	CALL(inner_kernel_dgemm_nn_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_one_4x4_lib4c)
@@ -8535,7 +8762,7 @@
 
 	movq	ARG10, %r14 // m1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NN_RU_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nn_ru_one_4x4_vs_lib4c)
@@ -9363,7 +9590,7 @@
 	CALL(inner_kernel_dgemm_nt_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_4x4_lib4c)
@@ -9481,7 +9708,7 @@
 
 	movq	ARG12, %r14 // n1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_4x4_vs_lib4c)
@@ -9557,7 +9784,7 @@
 	CALL(inner_kernel_dgemm_nt_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_4x4_lib4c)
@@ -9673,7 +9900,7 @@
 
 	movq	ARG10, %r14 // m1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_4x4_vs_lib4c)
@@ -9745,7 +9972,7 @@
 	CALL(inner_kernel_dgemm_nt_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_one_4x4_lib4c)
@@ -9863,7 +10090,7 @@
 
 	movq	ARG12, %r14 // n1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_one_4x4_vs_lib4c)
@@ -9939,7 +10166,7 @@
 	CALL(inner_kernel_dgemm_nt_4x4_lib4c)
 #endif
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_one_4x4_lib4c)
@@ -10055,7 +10282,7 @@
 
 	movq	ARG10, %r14 // m1
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RL_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_rl_one_4x4_vs_lib4c)
@@ -10503,7 +10730,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_4x4_lib4c)
@@ -10575,7 +10802,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_4x4_vs_lib4c)
@@ -10695,7 +10922,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_4x4_lib4c)
@@ -10765,7 +10992,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_4x4_vs_lib4c)
@@ -11263,7 +11490,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_one_4x4_lib4c)
@@ -11335,7 +11562,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_one_4x4_vs_lib4c)
@@ -11455,7 +11682,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_ONE_4X4_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_one_4x4_lib4c)
@@ -11525,7 +11752,7 @@
 	movq	ARG5, %r13  // ldb
 	sall	$3, %r13d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_DTRMM_NT_RU_ONE_4X4_VS_LIB4C
 #else
 	CALL(inner_edge_dtrmm_nt_ru_one_4x4_vs_lib4c)
@@ -15732,7 +15959,7 @@
 	movq	ARG13, %r12 // n1
 
 #if MACRO_LEVEL>=1
-	INNER_EDGE_DTRSM_RUT_ONEINV_4X4_VS_LIB
+	INNER_EDGE_DTRSM_RUT_ONE_4X4_VS_LIB
 #else
 	CALL(inner_edge_dtrsm_rut_one_4x4_vs_lib)
 #endif

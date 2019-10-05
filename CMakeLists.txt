@@ -3,25 +3,31 @@
 # This file is part of BLASFEO.                                                                   #
 #                                                                                                 #
 # BLASFEO -- BLAS For Embedded Optimization.                                                      #
-# Copyright (C) 2016-2018 by Gianluca Frison.                                                     #
+# Copyright (C) 2019 by Gianluca Frison.                                                          #
 # Developed at IMTEK (University of Freiburg) under the supervision of Moritz Diehl.              #
 # All rights reserved.                                                                            #
 #                                                                                                 #
-# This program is free software: you can redistribute it and/or modify                            #
-# it under the terms of the GNU General Public License as published by                            #
-# the Free Software Foundation, either version 3 of the License, or                               #
-# (at your option) any later version                                                              #.
+# The 2-Clause BSD License                                                                        #
 #                                                                                                 #
-# This program is distributed in the hope that it will be useful,                                 #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of                                  #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                   #
-# GNU General Public License for more details.                                                    #
+# Redistribution and use in source and binary forms, with or without                              #
+# modification, are permitted provided that the following conditions are met:                     #
 #                                                                                                 #
-# You should have received a copy of the GNU General Public License                               #
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.                          #
+# 1. Redistributions of source code must retain the above copyright notice, this                  #
+#    list of conditions and the following disclaimer.                                             #
+# 2. Redistributions in binary form must reproduce the above copyright notice,                    #
+#    this list of conditions and the following disclaimer in the documentation                    #
+#    and/or other materials provided with the distribution.                                       #
 #                                                                                                 #
-# The authors designate this particular file as subject to the "Classpath" exception              #
-# as provided by the authors in the LICENSE file that accompained this code.                      #
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND                 #
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                   #
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                          #
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR                 #
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES                  #
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                    #
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND                     #
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT                      #
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS                   #
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                    #
 #                                                                                                 #
 # Author: Gianluca Frison, gianluca.frison (at) imtek.uni-freiburg.de                             #
 #                                                                                                 #
@@ -31,30 +37,109 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(blasfeo C ASM)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # enable_language(C ASM)
 
 
 # Target architecture
-set(TARGET X64_INTEL_HASWELL CACHE STRING "Target architecture")
-# set(TARGET X64_INTEL_SANDY_BRIDGE
-# set(TARGET X64_INTEL_CORE)
-# set(TARGET X64_AMD_BULLDOZER)
-# set(TARGET ARMV8A_ARM_CORTEX_A57)
-# set(TARGET ARMV7A_ARM_CORTEX_A15)
+set(TARGET X64_AUTOMATIC CACHE STRING "Target architecture")
+# set(TARGET X64_INTEL_HASWELL CACHE STRING "Target architecture")
+# set(TARGET X64_INTEL_SANDY_BRIDGE CACHE STRING "Target architecture")
+# set(TARGET X64_INTEL_CORE CACHE STRING "Target architecture")
+# set(TARGET X64_AMD_BULLDOZER CACHE STRING "Target architecture")
+# set(TARGET ARMV8A_ARM_CORTEX_A57 CACHE STRING "Target architecture")
+# set(TARGET ARMV8A_ARM_CORTEX_A53 CACHE STRING "Target architecture")
+# set(TARGET ARMV7A_ARM_CORTEX_A15 CACHE STRING "Target architecture")
+# set(TARGET ARMV7A_ARM_CORTEX_A7 CACHE STRING "Target architecture")
 # set(TARGET GENERIC)
+
+# Populate a list of allowable targets and link it to the option
+set(ALLOWED_TARGETS
+		X64_AUTOMATIC
+		X64_INTEL_HASWELL
+		X64_INTEL_SANDY_BRIDGE
+		X64_INTEL_CORE
+		X64_AMD_BULLDOZER
+		ARMV8A_ARM_CORTEX_A57
+		ARMV8A_ARM_CORTEX_A53
+		ARMV7A_ARM_CORTEX_A15
+		ARMV7A_ARM_CORTEX_A7
+		GENERIC
+		)
+set_property(CACHE TARGET PROPERTY STRINGS ${ALLOWED_TARGETS})
+
+# This list contains the targets to try when the user sets the target to
+# X64_AUTOMATIC. The order they appear in this list is the order in which
+# they are tested, and the first working (both compile and run) will be
+# selected for use
+set(X64_AUTOMATIC_TARGETS
+		X64_INTEL_HASWELL
+		X64_AMD_BULLDOZER
+		X64_INTEL_SANDY_BRIDGE
+		X64_INTEL_CORE
+		GENERIC
+		)
+
+
+list(FIND ALLOWED_TARGETS ${TARGET} isvalid)
+if(${isvalid} EQUAL -1)
+	message(FATAL_ERROR "Target ${TARGET} is not supported")
+endif()
 
 # Linear Algebra backend
 set(LA HIGH_PERFORMANCE CACHE STRING "Linear algebra backend")
-# set(LA REFERENCE)
-# set(LA BLAS)
+# set(LA REFERENCE CACHE STRING "Linear algebra backend")
+# set(LA BLAS CACHE STRING "Linear algebra backend")
+
+# Populate the list of allowed LA backends and link it to the option
+set(ALLOWED_BACKENDS
+	  HIGH_PERFORMANCE
+	  REFERENCE
+	  BLAS
+	  )
+set_property(CACHE LA PROPERTY STRINGS ${ALLOWED_BACKENDS})
+
+list(FIND ALLOWED_BACKENDS ${LA} isvalid)
+if(${isvalid} EQUAL -1)
+	message(FATAL_ERROR "LA backend ${LA} is not supported")
+endif()
 
 # BLAS and LAPACK version (for LA=BLAS in BLASFEO or for BLASFEO_BENCHMARS=ON)
 set(EXTERNAL_BLAS 0 CACHE STRING "Reference blas to use")
-# set(EXTERNAL_BLAS OPENBLAS)
-# set(EXTERNAL_BLAS NETLIB)
-# set(EXTERNAL_BLAS MKL)
-# set(EXTERNAL_BLAS BLIS)
-# set(EXTERNAL_BLAS ATLAS)
+# set(EXTERNAL_BLAS OPENBLAS CACHE STRING "Reference blas to use")
+# set(EXTERNAL_BLAS NETLIB CACHE STRING "Reference blas to use")
+# set(EXTERNAL_BLAS MKL CACHE STRING "Reference blas to use")
+# set(EXTERNAL_BLAS BLIS CACHE STRING "Reference blas to use")
+# set(EXTERNAL_BLAS ATLAS CACHE STRING "Reference blas to use")
+
+# Populate the list of allowed exernal BLAS tools and link it to the option
+set(ALLOWED_EXTERNAL_BLAS
+		0
+		OPENBLAS
+		NETLIB
+		MKL
+		BLIS
+		ATLAS
+		)
+set_property(CACHE EXTERNAL_BLAS PROPERTY STRINGS ${ALLOWED_EXTERNAL_BLAS})
+
+list(FIND ALLOWED_EXTERNAL_BLAS ${EXTERNAL_BLAS} isvalid)
+if(${isvalid} EQUAL -1)
+	message(FATAL_ERROR "External BLAS ${EXTERNAL_BLAS} is not supported")
+endif()
+
+# Pass the allowed items up to the parent scope (if there is one)
+# This is detected by comparing the project name to the one set earlier in this file
+if(NOT ${CMAKE_PROJECT_NAME} STREQUAL blasfeo)
+	set(BLASFEO_ALLOWED_TARGETS ${ALLOWED_TARGETS} PARENT_SCOPE)
+	set(BLASFEO_ALLOWED_BACKENDS ${ALLOWED_BACKENDS} PARENT_SCOPE)
+	set(BLASFEO_ALLOWED_EXTERNAL_BLAS ${ALLOWED_EXTERNAL_BLAS} PARENT_SCOPE)
+endif()
+
+if(NOT DEFINED(BLASFEO_CROSSCOMPILING))
+	set(BLASFEO_CROSSCOMPILING ${CMAKE_CROSSCOMPILING})
+endif()
 
 # Stack buffer size (malloc for larger)
 set(K_MAX_STACK 300 CACHE STRING "Maximum k value using stack memory")
@@ -83,25 +168,24 @@ if(CMAKE_SYSTEM MATCHES "dSpace" OR CMAKE_BUILD_TYPE MATCHES "Release")
 	set(BLASFEO_EXAMPLES OFF CACHE BOOL "Examples disabled" FORCE)
 endif()
 
-configure_file(${PROJECT_SOURCE_DIR}/blasfeo_target.h.in
-	${CMAKE_CURRENT_SOURCE_DIR}/include/blasfeo_target.h @ONLY)
-
 # C Compiler
 # set(CC_COMPILER gcc CACHE STRING "compiler")
 # set(CC_COMPILER clang)
 # set(CC_COMPILER x86_64-w64-mingw32-gcc)
-
-# build shared library
-#set(BUILD_SHARED_LIBS ON CACHE STRING "Build shared libraries")
-
-# installation directory
-if(CMAKE_INSTALL_PREFIX MATCHES "/usr/local")
-	set(CMAKE_INSTALL_PREFIX "/opt/blasfeo")
+if(CMAKE_C_COMPILER_ID MATCHES MSVC)
+	if(NOT ${TARGET} MATCHES GENERIC)
+		message( FATAL_ERROR "MSVC compiler only supported for TARGET=GENERIC")
+	endif()
 endif()
 
+# build shared library
+set(BUILD_SHARED_LIBS OFF CACHE STRING "Build shared libraries")
+
+# installation directory
+set(CMAKE_INSTALL_PREFIX "/opt/blasfeo" CACHE STRING "Installation path")
+
 # headers installation directory
-set(BLASFEO_HEADERS_INSTALLATION_DIRECTORY "include"
-	CACHE STRING "Headers local installation directory")
+set(BLASFEO_HEADERS_INSTALLATION_DIRECTORY "include" CACHE STRING "Headers local installation directory")
 
 # Macro level (code size vs performance in assembly kernels): 0 (no macro),
 # 1 (all macro but gemm kernel), 2 (all macro)
@@ -109,18 +193,6 @@ set(MACRO_LEVEL 0)
 
 # enable runtine checks
 set(RUNTIME_CHECKS OFF)
-
-# compiler flags
-if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-
-	# build informations
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLA=${LA}")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET=${TARGET}")
-
-	# debugging flags
-	# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-	# set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -g")
-endif()
 
 # testing
 if(BLASFEO_TESTING MATCHES ON)
@@ -134,16 +206,10 @@ endif()
 # search directories
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${BLASFEO_PATH}/include")
 
-#
-if(${LA} MATCHES HIGH_PERFORMANCE)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLA_HIGH_PERFORMANCE")
-endif()
-if(${LA} MATCHES REFERENCE)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLA_REFERENCE")
-endif()
-if(${LA} MATCHES BLAS)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLA_BLAS")
-endif()
+# Specify the linear algebra package to use
+message(STATUS "Using linear algebra: ${LA}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLA_${LA}")
+
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DK_MAX_STACK=${K_MAX_STACK}")
 
@@ -170,95 +236,85 @@ if(${MACRO_LEVEL} MATCHES 2)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMACRO_LEVEL=2")
 endif()
 
-#
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+# Detect the host system
+if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Linux")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DOS_LINUX")
-	set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -DOS_LINUX")
+	set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -DOS_LINUX")
 endif()
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DOS_MAC")
-	set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -DOS_MAC")
+	set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -DOS_MAC")
 endif()
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DOS_WINDOWS")
-	set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -DOS_WINDOWS")
+	set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -DOS_WINDOWS")
 endif()
 
-#
-if(${EXTERNAL_BLAS} MATCHES 0)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEXTERNAL_BLAS_NONE")
-endif(${EXTERNAL_BLAS} MATCHES 0)
+# External BLAS flags
+set(C_FLAGS_BLAS_0        "-DEXTERNAL_BLAS_NONE")
+set(C_FLAGS_BLAS_OPENBLAS "-DEXTERNAL_BLAS_OPENBLAS -I/opt/openblas/include")
+set(C_FLAGS_BLAS_BLIS     "-DEXTERNAL_BLAS_BLIS -std=c99 -I/opt/blis/include/blis")
+set(C_FLAGS_BLAS_NETLIB   "-DEXTERNAL_BLAS_NETLIB -I/opt/netlib/include")
+set(C_FLAGS_BLAS_MKL      "-DEXTERNAL_BLAS_MKL -m64 -I/opt/intel/mkl/include")
+set(C_FLAGS_BLAS_ATLAS    "-DEXTERNAL_BLAS_ATLAS")
 
-if(${EXTERNAL_BLAS} MATCHES OPENBLAS)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEXTERNAL_BLAS_OPENBLAS -I/opt/openblas/include")
-endif(${EXTERNAL_BLAS} MATCHES OPENBLAS)
+message(STATUS "Using external BLAS: ${EXTERNAL_BLAS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_FLAGS_BLAS_${EXTERNAL_BLAS}}")
 
-if(${EXTERNAL_BLAS} MATCHES BLIS)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEXTERNAL_BLAS_BLIS -std=c99 -I/opt/blis/include/blis")
-endif(${EXTERNAL_BLAS} MATCHES BLIS)
 
-if(${EXTERNAL_BLAS} MATCHES NETLIB)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEXTERNAL_BLAS_NETLIB -I/opt/netlib/include")
-endif(${EXTERNAL_BLAS} MATCHES NETLIB)
-
-if(${EXTERNAL_BLAS} MATCHES MKL)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEXTERNAL_BLAS_MKL -m64 -I/opt/intel/mkl/include")
-endif(${EXTERNAL_BLAS} MATCHES MKL)
-
-if(${EXTERNAL_BLAS} MATCHES ATLAS)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEXTERNAL_BLAS_ATLAS")
-endif(${EXTERNAL_BLAS} MATCHES ATLAS)
-
-# architecture-specific flags
-if(${TARGET} MATCHES X64_INTEL_HASWELL)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_X64_INTEL_HASWELL")
-	if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64 -mavx -mavx2 -mfma")
-	endif()
+# common C flags
+if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -fPIC")
 endif()
 
-if(${TARGET} MATCHES X64_INTEL_SANDY_BRIDGE)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_X64_INTEL_SANDY_BRIDGE")
-	if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64 -mavx")
-	endif()
+
+# architecture-specific C flags
+set(C_FLAGS_TARGET_X64_INTEL_HASWELL      "-m64 -mavx -mavx2 -mfma")
+set(C_FLAGS_TARGET_X64_INTEL_SANDY_BRIDGE "-m64 -mavx")
+set(C_FLAGS_TARGET_X64_INTEL_CORE         "-m64 -msse3")
+set(C_FLAGS_TARGET_X64_AMD_BULLDOZER      "-m64 -mavx -mfma")
+set(C_FLAGS_TARGET_ARMV8A_ARM_CORTEX_A57  "-march=armv8-a+crc+crypto+simd -mcpu=cortex-a57")
+set(C_FLAGS_TARGET_ARMV8A_ARM_CORTEX_A53  "-march=armv8-a+crc+crypto+simd -mcpu=cortex-a53")
+set(C_FLAGS_TARGET_ARMV7A_ARM_CORTEX_A15  "-marm -mfloat-abi=hard -mfpu=neon-vfpv4 -mcpu=cortex-a15")
+set(C_FLAGS_TARGET_ARMV7A_ARM_CORTEX_A7   "-marm -mfloat-abi=hard -mfpu=neon-vfpv4 -mcpu=cortex-a7")
+set(C_FLAGS_TARGET_GENERIC                "")
+
+# architecture-specific assembly flags
+set(ASM_FLAGS_TARGET_X64_INTEL_HASWELL      "")
+set(ASM_FLAGS_TARGET_X64_INTEL_SANDY_BRIDGE "")
+set(ASM_FLAGS_TARGET_X64_INTEL_CORE         "")
+set(ASM_FLAGS_TARGET_X64_AMD_BULLDOZER      "")
+set(ASM_FLAGS_TARGET_ARMV8A_ARM_CORTEX_A57  "")
+set(ASM_FLAGS_TARGET_ARMV8A_ARM_CORTEX_A53  "")
+set(ASM_FLAGS_TARGET_ARMV7A_ARM_CORTEX_A15  "-mfpu=neon-vfpv4 -mcpu=cortex-a15")
+set(ASM_FLAGS_TARGET_ARMV7A_ARM_CORTEX_A7   "-mfpu=neon-vfpv4 -mcpu=cortex-a7")
+set(ASM_FLAGS_TARGET_GENERIC                "")
+
+
+if(${TARGET} MATCHES X64_AUTOMATIC)
+	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/X64AutomaticTargetSelection.cmake)
+	X64AutomaticTargetSelection()
+	message(STATUS "Detected target ${TARGET}")
+else()
+	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/TestSingleTarget.cmake)
+	TestSingleTarget()
+	message(STATUS "Compiling for target: ${TARGET}")
 endif()
 
-if(${TARGET} MATCHES X64_INTEL_CORE)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_X64_INTEL_CORE")
-	if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64 -msse3")
-	endif()
-endif()
 
-if(${TARGET} MATCHES X64_AMD_BULLDOZER)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_X64_AMD_BULLDOZER")
-	if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64 -mavx -mfma")
-	endif()
-endif()
+# Create the target.h file with the proper target definition
+configure_file(${PROJECT_SOURCE_DIR}/blasfeo_target.h.in
+	${CMAKE_CURRENT_SOURCE_DIR}/include/blasfeo_target.h @ONLY)
 
-if(${TARGET} MATCHES ARMV8A_ARM_CORTEX_A57)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_ARMV8A_ARM_CORTEX_A57")
-	set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -DTARGET_ARMV8A_ARM_CORTEX_A57")
-	if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv8-a+crc+crypto+fp+simd")
-	endif()
-endif()
 
-if(${TARGET} MATCHES ARMV7A_ARM_CORTEX_A15)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_ARMV7A_ARM_CORTEX_A15")
-	set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -DTARGET_ARMV7A_ARM_CORTEX_A15")
-	if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -marm -mfloat-abi=hard -mfpu=neon-vfpv4 -mcpu=cortex-a15")
-		set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon-vfpv4")
-	endif()
-endif()
+# Append the appropriate flags based on the architecture and compiler
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_${TARGET}")
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -DTARGET_${TARGET}")
 
-if(${TARGET} MATCHES GENERIC)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTARGET_GENERIC")
+if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_FLAGS_TARGET_${TARGET}}")
+	set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${ASM_FLAGS_TARGET_${TARGET}}")
 endif()
-
 
 
 # source files
@@ -268,6 +324,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES X64_INTEL_HASWELL)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib8.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib48.c
@@ -333,6 +390,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES X64_INTEL_SANDY_BRIDGE)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib8.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib48.c
@@ -362,6 +420,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 			${PROJECT_SOURCE_DIR}/kernel/avx/kernel_sgemm_16x4_lib8.S
 			${PROJECT_SOURCE_DIR}/kernel/avx/kernel_sgemm_8x8_lib8.S
 			${PROJECT_SOURCE_DIR}/kernel/avx/kernel_sgemm_8x4_lib8.S
+			${PROJECT_SOURCE_DIR}/kernel/generic/kernel_sgemm_8x4_lib8.c
 			${PROJECT_SOURCE_DIR}/kernel/avx/kernel_sgemm_diag_lib8.c
 			${PROJECT_SOURCE_DIR}/kernel/avx/kernel_sgemv_8_lib8.S
 			${PROJECT_SOURCE_DIR}/kernel/avx/kernel_sgemv_4_lib8.S
@@ -396,6 +455,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES X64_INTEL_CORE)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib44.c
@@ -445,6 +505,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES X64_AMD_BULLDOZER)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib44.c
@@ -494,6 +555,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES ARMV8A_ARM_CORTEX_A57)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib44.c
@@ -502,6 +564,8 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 		file(GLOB KERNEL_SRC
 			${PROJECT_SOURCE_DIR}/kernel/armv8a/kernel_dgemm_8x4_lib4.S
 			${PROJECT_SOURCE_DIR}/kernel/armv8a/kernel_dgemm_4x4_lib4.S
+			${PROJECT_SOURCE_DIR}/kernel/armv8a/kernel_dpack_lib4.S
+
 			${PROJECT_SOURCE_DIR}/kernel/generic/kernel_dgemm_4x4_lib4.c
 			${PROJECT_SOURCE_DIR}/kernel/generic/kernel_dgemm_diag_lib4.c
 			${PROJECT_SOURCE_DIR}/kernel/generic/kernel_dgemv_4_lib4.c
@@ -549,14 +613,20 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES ARMV8A_ARM_CORTEX_A53)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib44.c
 			)
 
 		file(GLOB KERNEL_SRC
+
+			${PROJECT_SOURCE_DIR}/kernel/armv8a/kernel_dgemm_12x4_lib4.S
 			${PROJECT_SOURCE_DIR}/kernel/armv8a/kernel_dgemm_8x4_lib4.S
 			${PROJECT_SOURCE_DIR}/kernel/armv8a/kernel_dgemm_4x4_lib4.S
+			${PROJECT_SOURCE_DIR}/kernel/armv8a/kernel_dpack_lib4.S
+
+
 			${PROJECT_SOURCE_DIR}/kernel/generic/kernel_dgemm_4x4_lib4.c
 			${PROJECT_SOURCE_DIR}/kernel/generic/kernel_dgemm_diag_lib4.c
 			${PROJECT_SOURCE_DIR}/kernel/generic/kernel_dgemv_4_lib4.c
@@ -604,6 +674,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES ARMV7A_ARM_CORTEX_A15)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib44.c
@@ -656,6 +727,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES ARMV7A_ARM_CORTEX_A7)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib44.c
@@ -708,6 +780,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 	if(${TARGET} MATCHES GENERIC)
 
 		file(GLOB AUX_SRC
+			${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 			${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib4.c
 			${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib44.c
@@ -756,6 +829,7 @@ if(${LA} MATCHES HIGH_PERFORMANCE)
 else(${LA} MATCHES HIGH_PERFORMANCE) # REFERENCE BLAS
 
 	file(GLOB AUX_SRC
+		${PROJECT_SOURCE_DIR}/auxiliary/blasfeo_stdlib.c
 		${PROJECT_SOURCE_DIR}/auxiliary/d_aux_lib.c
 		${PROJECT_SOURCE_DIR}/auxiliary/s_aux_lib.c
 		${PROJECT_SOURCE_DIR}/auxiliary/m_aux_lib.c
@@ -813,6 +887,10 @@ set(BLASFEO_SRC ${AUX_SRC} ${KERNEL_SRC} ${BLAS_SRC} ${EXT_SRC})
 
 # add library
 add_library(blasfeo ${BLASFEO_SRC})
+
+if(EMBEDDED_TARGET MATCHES XILINX_NONE_ELF )
+	target_link_libraries(blasfeo PUBLIC -Wl,--start-group xil c gcc -Wl,--end-group)
+endif()
 
 
 target_include_directories(blasfeo

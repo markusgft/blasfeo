@@ -3,25 +3,31 @@
 * This file is part of BLASFEO.                                                                   *
 *                                                                                                 *
 * BLASFEO -- BLAS For Embedded Optimization.                                                      *
-* Copyright (C) 2016-2018 by Gianluca Frison.                                                     *
+* Copyright (C) 2019 by Gianluca Frison.                                                          *
 * Developed at IMTEK (University of Freiburg) under the supervision of Moritz Diehl.              *
 * All rights reserved.                                                                            *
 *                                                                                                 *
-* This program is free software: you can redistribute it and/or modify                            *
-* it under the terms of the GNU General Public License as published by                            *
-* the Free Software Foundation, either version 3 of the License, or                               *
-* (at your option) any later version                                                              *.
+* The 2-Clause BSD License                                                                        *
 *                                                                                                 *
-* This program is distributed in the hope that it will be useful,                                 *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of                                  *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                   *
-* GNU General Public License for more details.                                                    *
+* Redistribution and use in source and binary forms, with or without                              *
+* modification, are permitted provided that the following conditions are met:                     *
 *                                                                                                 *
-* You should have received a copy of the GNU General Public License                               *
-* along with this program.  If not, see <https://www.gnu.org/licenses/>.                          *
+* 1. Redistributions of source code must retain the above copyright notice, this                  *
+*    list of conditions and the following disclaimer.                                             *
+* 2. Redistributions in binary form must reproduce the above copyright notice,                    *
+*    this list of conditions and the following disclaimer in the documentation                    *
+*    and/or other materials provided with the distribution.                                       *
 *                                                                                                 *
-* The authors designate this particular file as subject to the "Classpath" exception              *
-* as provided by the authors in the LICENSE file that accompained this code.                      *
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND                 *
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                   *
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                          *
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR                 *
+* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES                  *
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                    *
+* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND                     *
+* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT                      *
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS                   *
+* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                    *
 *                                                                                                 *
 * Author: Gianluca Frison, gianluca.frison (at) imtek.uni-freiburg.de                             *
 *                                                                                                 *
@@ -3337,7 +3343,8 @@ NAME:
 #endif
 
 	ld1		{v28.2d}, [x8]
-	// TODO check on beta
+
+	ld1		{v29.2d}, [x9]
 
 	fmul	v0.2d, v0.2d, v28.2d[0]
 	fmul	v1.2d, v1.2d, v28.2d[0]
@@ -3356,33 +3363,36 @@ NAME:
 	fmul	v14.2d, v14.2d, v28.2d[0]
 	fmul	v15.2d, v15.2d, v28.2d[0]
 
-	ld1		{v28.2d}, [x9]
+	fcmpe	d29, #0
+	beq		0f
 
 	add		x12, x10, x11
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x10], #64
-	fmla	v0.2d, v24.2d, v28.2d[0]
-	fmla	v1.2d, v25.2d, v28.2d[0]
-	fmla	v2.2d, v26.2d, v28.2d[0]
-	fmla	v3.2d, v27.2d, v28.2d[0]
+	fmla	v0.2d, v24.2d, v29.2d[0]
+	fmla	v1.2d, v25.2d, v29.2d[0]
+	fmla	v2.2d, v26.2d, v29.2d[0]
+	fmla	v3.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x10], #64
-	fmla	v4.2d, v24.2d, v28.2d[0]
-	fmla	v5.2d, v25.2d, v28.2d[0]
-	fmla	v6.2d, v26.2d, v28.2d[0]
-	fmla	v7.2d, v27.2d, v28.2d[0]
+	fmla	v4.2d, v24.2d, v29.2d[0]
+	fmla	v5.2d, v25.2d, v29.2d[0]
+	fmla	v6.2d, v26.2d, v29.2d[0]
+	fmla	v7.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x12], #64
-	fmla	v8.2d, v24.2d, v28.2d[0]
-	fmla	v9.2d, v25.2d, v28.2d[0]
-	fmla	v10.2d, v26.2d, v28.2d[0]
-	fmla	v11.2d, v27.2d, v28.2d[0]
+	fmla	v8.2d, v24.2d, v29.2d[0]
+	fmla	v9.2d, v25.2d, v29.2d[0]
+	fmla	v10.2d, v26.2d, v29.2d[0]
+	fmla	v11.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x12], #64
-	fmla	v12.2d, v24.2d, v28.2d[0]
-	fmla	v13.2d, v25.2d, v28.2d[0]
-	fmla	v14.2d, v26.2d, v28.2d[0]
-	fmla	v15.2d, v27.2d, v28.2d[0]
+	fmla	v12.2d, v24.2d, v29.2d[0]
+	fmla	v13.2d, v25.2d, v29.2d[0]
+	fmla	v14.2d, v26.2d, v29.2d[0]
+	fmla	v15.2d, v27.2d, v29.2d[0]
+
+0:
 
 #if MACRO_LEVEL>=1
 	.endm
@@ -3412,10 +3422,7 @@ NAME:
 	FUN_START(inner_scale_m1b_8x4_lib4)
 #endif
 
-	add		x11, x9, x10
-
-	ld1		{v28.2d}, [x8]
-	// TODO check on beta
+	ld1		{v29.2d}, [x8]
 
 	fneg	v0.2d, v0.2d
 	fneg	v1.2d, v1.2d
@@ -3437,29 +3444,36 @@ NAME:
 	fneg	v14.2d, v14.2d
 	fneg	v15.2d, v15.2d
 
-	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x9], #64
-	fmla	v0.2d, v24.2d, v28.2d[0]
-	fmla	v1.2d, v25.2d, v28.2d[0]
-	fmla	v2.2d, v26.2d, v28.2d[0]
-	fmla	v3.2d, v27.2d, v28.2d[0]
+	fcmpe	d29, #0
+	beq		0f
+
+	add		x11, x9, x10
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x9], #64
-	fmla	v4.2d, v24.2d, v28.2d[0]
-	fmla	v5.2d, v25.2d, v28.2d[0]
-	fmla	v6.2d, v26.2d, v28.2d[0]
-	fmla	v7.2d, v27.2d, v28.2d[0]
+	fmla	v0.2d, v24.2d, v29.2d[0]
+	fmla	v1.2d, v25.2d, v29.2d[0]
+	fmla	v2.2d, v26.2d, v29.2d[0]
+	fmla	v3.2d, v27.2d, v29.2d[0]
+
+	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x9], #64
+	fmla	v4.2d, v24.2d, v29.2d[0]
+	fmla	v5.2d, v25.2d, v29.2d[0]
+	fmla	v6.2d, v26.2d, v29.2d[0]
+	fmla	v7.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x11], #64
-	fmla	v8.2d, v24.2d, v28.2d[0]
-	fmla	v9.2d, v25.2d, v28.2d[0]
-	fmla	v10.2d, v26.2d, v28.2d[0]
-	fmla	v11.2d, v27.2d, v28.2d[0]
+	fmla	v8.2d, v24.2d, v29.2d[0]
+	fmla	v9.2d, v25.2d, v29.2d[0]
+	fmla	v10.2d, v26.2d, v29.2d[0]
+	fmla	v11.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x11], #64
-	fmla	v12.2d, v24.2d, v28.2d[0]
-	fmla	v13.2d, v25.2d, v28.2d[0]
-	fmla	v14.2d, v26.2d, v28.2d[0]
-	fmla	v15.2d, v27.2d, v28.2d[0]
+	fmla	v12.2d, v24.2d, v29.2d[0]
+	fmla	v13.2d, v25.2d, v29.2d[0]
+	fmla	v14.2d, v26.2d, v29.2d[0]
+	fmla	v15.2d, v27.2d, v29.2d[0]
+
+0:
 
 #if MACRO_LEVEL>=1
 	.endm
@@ -3569,7 +3583,8 @@ NAME:
 	mov		v14.16b, v27.16b
 
 	ld1		{v28.2d}, [x8]
-	// TODO check on beta
+
+	ld1		{v29.2d}, [x9]
 
 	fmul	v0.2d, v0.2d, v28.2d[0]
 	fmul	v1.2d, v1.2d, v28.2d[0]
@@ -3588,31 +3603,34 @@ NAME:
 	fmul	v14.2d, v14.2d, v28.2d[0]
 	fmul	v15.2d, v15.2d, v28.2d[0]
 
-	ld1		{v28.2d}, [x9]
+	fcmpe	d29, #0
+	beq		0f
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x10], #64
-	fmla	v0.2d, v24.2d, v28.2d[0]
-	fmla	v1.2d, v25.2d, v28.2d[0]
-	fmla	v2.2d, v26.2d, v28.2d[0]
-	fmla	v3.2d, v27.2d, v28.2d[0]
+	fmla	v0.2d, v24.2d, v29.2d[0]
+	fmla	v1.2d, v25.2d, v29.2d[0]
+	fmla	v2.2d, v26.2d, v29.2d[0]
+	fmla	v3.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x10], #64
-	fmla	v4.2d, v24.2d, v28.2d[0]
-	fmla	v5.2d, v25.2d, v28.2d[0]
-	fmla	v6.2d, v26.2d, v28.2d[0]
-	fmla	v7.2d, v27.2d, v28.2d[0]
+	fmla	v4.2d, v24.2d, v29.2d[0]
+	fmla	v5.2d, v25.2d, v29.2d[0]
+	fmla	v6.2d, v26.2d, v29.2d[0]
+	fmla	v7.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x10], #64
-	fmla	v8.2d, v24.2d, v28.2d[0]
-	fmla	v9.2d, v25.2d, v28.2d[0]
-	fmla	v10.2d, v26.2d, v28.2d[0]
-	fmla	v11.2d, v27.2d, v28.2d[0]
+	fmla	v8.2d, v24.2d, v29.2d[0]
+	fmla	v9.2d, v25.2d, v29.2d[0]
+	fmla	v10.2d, v26.2d, v29.2d[0]
+	fmla	v11.2d, v27.2d, v29.2d[0]
 
 	ld1		{v24.2d, v25.2d, v26.2d, v27.2d}, [x10], #64
-	fmla	v12.2d, v24.2d, v28.2d[0]
-	fmla	v13.2d, v25.2d, v28.2d[0]
-	fmla	v14.2d, v26.2d, v28.2d[0]
-	fmla	v15.2d, v27.2d, v28.2d[0]
+	fmla	v12.2d, v24.2d, v29.2d[0]
+	fmla	v13.2d, v25.2d, v29.2d[0]
+	fmla	v14.2d, v26.2d, v29.2d[0]
+	fmla	v15.2d, v27.2d, v29.2d[0]
+
+0:
 
 #if MACRO_LEVEL>=1
 	.endm
@@ -4359,7 +4377,7 @@ NAME:
 	lsl		w12, w12, #5 // 32*sdb
 	mov		w13, w4 // offsetB
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_GEMM_ADD_NN_8X4_LIB4
 #else
 	bl	inner_edge_gemm_add_nn_8x4_lib4
@@ -4439,7 +4457,7 @@ NAME:
 	lsl		w12, w12, #5 // 32*sdb
 	mov		w13, w4 // offsetB
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_GEMM_ADD_NN_8X4_LIB4
 #else
 	bl	inner_edge_gemm_add_nn_8x4_lib4
@@ -4809,7 +4827,7 @@ NAME:
 	lsl		w12, w12, #5 // 32*sdb
 	mov		w13, w4 // offsetB
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_GEMM_ADD_NN_8X4_LIB4
 #else
 	bl	inner_edge_gemm_add_nn_8x4_lib4
@@ -4889,7 +4907,7 @@ NAME:
 	lsl		w12, w12, #5 // 32*sdb
 	mov		w13, w4 // offsetB
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	INNER_EDGE_GEMM_ADD_NN_8X4_LIB4
 #else
 	bl	inner_edge_gemm_add_nn_8x4_lib4

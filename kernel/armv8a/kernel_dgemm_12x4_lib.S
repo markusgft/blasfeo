@@ -3,25 +3,31 @@
 * This file is part of BLASFEO.                                                                   *
 *                                                                                                 *
 * BLASFEO -- BLAS For Embedded Optimization.                                                      *
-* Copyright (C) 2016-2018 by Gianluca Frison.                                                     *
+* Copyright (C) 2019 by Gianluca Frison.                                                          *
 * Developed at IMTEK (University of Freiburg) under the supervision of Moritz Diehl.              *
 * All rights reserved.                                                                            *
 *                                                                                                 *
-* This program is free software: you can redistribute it and/or modify                            *
-* it under the terms of the GNU General Public License as published by                            *
-* the Free Software Foundation, either version 3 of the License, or                               *
-* (at your option) any later version                                                              *.
+* The 2-Clause BSD License                                                                        *
 *                                                                                                 *
-* This program is distributed in the hope that it will be useful,                                 *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of                                  *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                   *
-* GNU General Public License for more details.                                                    *
+* Redistribution and use in source and binary forms, with or without                              *
+* modification, are permitted provided that the following conditions are met:                     *
 *                                                                                                 *
-* You should have received a copy of the GNU General Public License                               *
-* along with this program.  If not, see <https://www.gnu.org/licenses/>.                          *
+* 1. Redistributions of source code must retain the above copyright notice, this                  *
+*    list of conditions and the following disclaimer.                                             *
+* 2. Redistributions in binary form must reproduce the above copyright notice,                    *
+*    this list of conditions and the following disclaimer in the documentation                    *
+*    and/or other materials provided with the distribution.                                       *
 *                                                                                                 *
-* The authors designate this particular file as subject to the "Classpath" exception              *
-* as provided by the authors in the LICENSE file that accompained this code.                      *
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND                 *
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                   *
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                          *
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR                 *
+* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES                  *
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                    *
+* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND                     *
+* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT                      *
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS                   *
+* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                    *
 *                                                                                                 *
 * Author: Gianluca Frison, gianluca.frison (at) imtek.uni-freiburg.de                             *
 *                                                                                                 *
@@ -1710,7 +1716,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_AB_12X4_LIB
 #else
 	.align	4
@@ -1718,6 +1724,8 @@
 #endif
 
 	ld1		{v28.2d}, [x8]
+
+	ld1		{v30.2d}, [x9]
 
 	fmul	v0.2d, v0.2d, v28.2d[0]
 	fmul	v1.2d, v1.2d, v28.2d[0]
@@ -1744,7 +1752,8 @@
 	fmul	v22.2d, v22.2d, v28.2d[0]
 	fmul	v23.2d, v23.2d, v28.2d[0]
 
-	ld1		{v30.2d}, [x9]
+	fcmpe	d30, #0
+	beq		0f
 
 	ldp		q24, q25, [x10, #0]
 	ldp		q26, q27, [x10, #32]
@@ -1790,8 +1799,9 @@
 	fmla	v22.2d, v28.2d, v30.2d[0]
 	fmla	v23.2d, v29.2d, v30.2d[0]
 
+0:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -1815,7 +1825,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_AB_12X4_VS_LIB
 #else
 	.align	4
@@ -1823,6 +1833,8 @@
 #endif
 
 	ld1		{v28.2d}, [x8]
+
+	ld1		{v30.2d}, [x9]
 
 	fmul	v0.2d, v0.2d, v28.2d[0]
 	fmul	v1.2d, v1.2d, v28.2d[0]
@@ -1849,7 +1861,8 @@
 	fmul	v22.2d, v22.2d, v28.2d[0]
 	fmul	v23.2d, v23.2d, v28.2d[0]
 
-	ld1		{v30.2d}, [x9]
+	fcmpe	d30, #0
+	beq		0f
 
 	cmp		w12, #4
 	blt		1f
@@ -2082,7 +2095,7 @@
 
 0:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -2103,7 +2116,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_M1B_12X4_LIB
 #else
 	.align	4
@@ -2111,7 +2124,6 @@
 #endif
 
 	ld1		{v30.2d}, [x8]
-	// TODO check on beta
 
 	fneg	v0.2d, v0.2d
 	fneg	v1.2d, v1.2d
@@ -2142,6 +2154,9 @@
 	fneg	v21.2d, v21.2d
 	fneg	v22.2d, v22.2d
 	fneg	v23.2d, v23.2d
+
+	fcmpe	d30, #0
+	beq		0f
 
 	ldp		q24, q25, [x9, #0]
 	ldp		q26, q27, [x9, #32]
@@ -2187,7 +2202,9 @@
 	fmla	v22.2d, v28.2d, v30.2d[0]
 	fmla	v23.2d, v29.2d, v30.2d[0]
 
-#if MACRO_LEVEL>=2
+0:
+
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -2210,7 +2227,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_M1B_12X4_VS_LIB
 #else
 	.align	4
@@ -2248,6 +2265,9 @@
 	fneg	v21.2d, v21.2d
 	fneg	v22.2d, v22.2d
 	fneg	v23.2d, v23.2d
+
+	fcmpe	d30, #0
+	beq		0f
 
 	cmp		w11, #4
 	blt		1f
@@ -2480,7 +2500,7 @@
 
 0:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -2500,7 +2520,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_M11_12X4_LIB
 #else
 	.align	4
@@ -2551,7 +2571,7 @@
 	fsub	v22.2d, v28.2d, v22.2d
 	fsub	v23.2d, v29.2d, v23.2d
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -2573,7 +2593,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_SCALE_M11_12X4_VS_LIB
 #else
 	.align	4
@@ -2811,7 +2831,7 @@
 
 0:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -2831,7 +2851,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_STORE_12X4_LIB
 #else
 	.align 4
@@ -2854,7 +2874,7 @@
 	stp		q14, q15, [x8, #32]
 	stp		q22, q23, [x8, #64]
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -2972,7 +2992,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_STORE_L_12X4_LIB
 #else
 	.align 4
@@ -3006,7 +3026,7 @@
 	stp		q14, q15, [x8, #32]
 	stp		q22, q23, [x8, #64]
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -3135,7 +3155,7 @@
 //
 // output arguments:
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.macro INNER_STORE_U_12X4_LIB
 #else
 	.align 4
@@ -3159,7 +3179,7 @@
 	stp		q14, q15, [x8, #32]
 	stp		q22, q23, [x8, #64]
 
-#if MACRO_LEVEL>=2
+#if MACRO_LEVEL>=1
 	.endm
 #else
 	ret
@@ -3270,6 +3290,45 @@
 
 
 
+// subroutine
+//
+// input arguments:
+// x8   <- D
+// x9   <- ldd*sizeof(double)
+//
+// output arguments:
+
+#if MACRO_LEVEL>=1
+	.macro INNER_PREFETCH_12X4_LIB
+#else
+	.align 4
+	FUN_START(inner_prefetch_12x4_lib)
+#endif
+
+	prfm	PLDL1KEEP, [x8, #0]
+	prfm	PLDL1KEEP, [x8, #64]
+	add		x8, x8, x9
+	prfm	PLDL1KEEP, [x8, #0]
+	prfm	PLDL1KEEP, [x8, #64]
+	add		x8, x8, x9
+	prfm	PLDL1KEEP, [x8, #0]
+	prfm	PLDL1KEEP, [x8, #64]
+	add		x8, x8, x9
+	prfm	PLDL1KEEP, [x8, #0]
+	prfm	PLDL1KEEP, [x8, #64]
+
+#if MACRO_LEVEL>=1
+	.endm
+#else
+	ret
+
+	FUN_END(inner_prefetch_12x4_lib)
+#endif
+
+
+
+
+
 //                                  w0        x1             x2         w3       x4         x5            x6         w7       sp+0       sp+8
 // void kernel_dgemm_nt_12x4_lib44cc(int kmax, double *alpha, double *A, int sda, double *B, double *beta, double *C, int ldc, double *D, int ldd)
 
@@ -3297,6 +3356,19 @@
 	INNER_KERNEL_GEMM_ADD_NT_12X4_LIB4
 #else
 	bl	inner_kernel_gemm_add_nt_12x4_lib4
+#endif
+
+
+
+	// prefetch
+	ldr		x8, [sp, #(STACKSIZE + 0)] // D
+	ldr		w9, [sp, #(STACKSIZE + 8)] // ldd
+	lsl		w9, w9, #3 // 8*sdd
+
+#if MACRO_LEVEL>=1
+	INNER_PREFETCH_12X4_LIB
+#else
+	bl inner_prefetch_12x4_lib
 #endif
 
 
@@ -3449,6 +3521,19 @@
 
 
 
+	// prefetch
+	ldr		x8, [sp, #(STACKSIZE + 8)] // D
+	ldr		w9, [sp, #(STACKSIZE + 16)] // ldd
+	lsl		w9, w9, #3 // 8*sdd
+
+#if MACRO_LEVEL>=1
+	INNER_PREFETCH_12X4_LIB
+#else
+	bl inner_prefetch_12x4_lib
+#endif
+
+
+
 	// call inner blend for generic alpha and beta
 	mov		x8, x1 // alpha
 	mov		x9, x6 // beta
@@ -3563,6 +3648,20 @@
 #endif
 
 103:
+
+
+
+	// prefetch
+	// TODO prefethc vs
+//	ldr		x8, [sp, #(STACKSIZE + 8)] // D
+//	ldr		w9, [sp, #(STACKSIZE + 16)] // ldd
+//	lsl		w9, w9, #3 // 8*sdd
+
+#if MACRO_LEVEL>=1
+//	INNER_PREFETCH_12X4_LIB
+#else
+//	bl inner_prefetch_12x4_lib
+#endif
 
 
 

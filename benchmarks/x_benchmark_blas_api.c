@@ -3,29 +3,35 @@
 * This file is part of BLASFEO.                                                                   *
 *                                                                                                 *
 * BLASFEO -- BLAS For Embedded Optimization.                                                      *
-* Copyright (C) 2016-2017 by Gianluca Frison.                                                     *
+* Copyright (C) 2019 by Gianluca Frison.                                                          *
 * Developed at IMTEK (University of Freiburg) under the supervision of Moritz Diehl.              *
 * All rights reserved.                                                                            *
 *                                                                                                 *
-* HPMPC is free software; you can redistribute it and/or                                          *
-* modify it under the terms of the GNU Lesser General Public                                      *
-* License as published by the Free Software Foundation; either                                    *
-* version 2.1 of the License, or (at your option) any later version.                              *
+* The 2-Clause BSD License                                                                        *
 *                                                                                                 *
-* HPMPC is distributed in the hope that it will be useful,                                        *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of                                  *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                                            *
-* See the GNU Lesser General Public License for more details.                                     *
+* Redistribution and use in source and binary forms, with or without                              *
+* modification, are permitted provided that the following conditions are met:                     *
 *                                                                                                 *
-* You should have received a copy of the GNU Lesser General Public                                *
-* License along with HPMPC; if not, write to the Free Software                                    *
-* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA                  *
+* 1. Redistributions of source code must retain the above copyright notice, this                  *
+*    list of conditions and the following disclaimer.                                             *
+* 2. Redistributions in binary form must reproduce the above copyright notice,                    *
+*    this list of conditions and the following disclaimer in the documentation                    *
+*    and/or other materials provided with the distribution.                                       *
 *                                                                                                 *
-* Author: Gianluca Frison, giaf (at) dtu.dk                                                       *
-*                          gianluca.frison (at) imtek.uni-freiburg.de                             *
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND                 *
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                   *
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                          *
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR                 *
+* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES                  *
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                    *
+* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND                     *
+* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT                      *
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS                   *
+* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                    *
+*                                                                                                 *
+* Author: Gianluca Frison, gianluca.frison (at) imtek.uni-freiburg.de                             *
 *                                                                                                 *
 **************************************************************************************************/
-
 
 #if defined(BENCHMARKS_MODE)
 
@@ -169,7 +175,7 @@ int main()
 	int ii, jj, ll;
 	int rep;
 
-	int nrep_in = 10; // number of benchmark batches
+	int nrep_in = 4; //10; // number of benchmark batches
 
 #if 1
 	int nn[] = {4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168, 172, 176, 180, 184, 188, 192, 196, 200, 204, 208, 212, 216, 220, 224, 228, 232, 236, 240, 244, 248, 252, 256, 260, 264, 268, 272, 276, 280, 284, 288, 292, 296, 300, 304, 308, 312, 316, 320, 324, 328, 332, 336, 340, 344, 348, 352, 356, 360, 364, 368, 372, 376, 380, 384, 388, 392, 396, 400, 404, 408, 412, 416, 420, 424, 428, 432, 436, 440, 444, 448, 452, 456, 460, 500, 550, 600, 650, 700};
@@ -212,6 +218,8 @@ int main()
 
 		int rep_in;
 
+		int *ipiv = malloc(n*sizeof(int));
+
 #if defined(DOUBLE_PRECISION)
 		double *A; d_zeros_align(&A, n, n); // = malloc(n*n*sizeof(double));
 		double *B; d_zeros_align(&B, n, n); // = malloc(n*n*sizeof(double));
@@ -221,6 +229,8 @@ int main()
 		float *B; s_zeros_align(&B, n, n); // = malloc(n*n*sizeof(float));
 		float *D; s_zeros_align(&D, n, n); // = malloc(n*n*sizeof(float));
 #endif
+
+		int *ipiv = malloc(n*sizeof(int));
 
 		// A
 		for(ii=0; ii<n*n; ii++)
@@ -355,6 +365,7 @@ int main()
 #elif defined(GEQRF)
 #elif defined(GETRF_NOPIVOT)
 #elif defined(GETRF_ROWPIVOT)
+				blasfeo_dgetrf(&n, &n, B, &n, ipiv, &info);
 #elif defined(POTRF_L)
 				blasfeo_dpotrf(&c_l, &n, B, &n, &info);
 #elif defined(POTRF_U)
@@ -472,6 +483,7 @@ int main()
 //		free(A);
 //		free(B);
 //		free(D);
+		free(ipiv);
 #if defined(DOUBLE_PRECISION)
 		d_free_align(A);
 		d_free_align(B);
@@ -481,6 +493,7 @@ int main()
 		s_free_align(B);
 		s_free_align(D);
 #endif
+		free(ipiv);
 
 		}
 
